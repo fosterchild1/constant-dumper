@@ -67,7 +67,7 @@ else
 	location=workspace["dump_"..count+1]
 end
 for i,v in pairs(dump.objects) do
-	if v.source and v.source:sub(1,7)~="CoreGui" and v.source:sub(1,12)~="CorePackages" then
+	if v.source and v.source:sub(1,8)~="=CoreGui" and v.source:sub(1,13)~="=CorePackages" then
 		local check=false
 		local idx
 		for l,x in pairs(paths) do
