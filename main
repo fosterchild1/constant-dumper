@@ -1,0 +1,138 @@
+local dump=game:GetService("HttpService"):JSONDecode(require(game.ServerScriptService.Script.dump))
+local finalstring="--[[\n"
+local paths={}
+local function objtostring(count,obj)
+	local str=obj.type
+	if obj.name then
+		str=str..": "..obj.name
+	end
+	if obj.data then
+		str=str..": "..obj.data
+	end
+	if obj.array then
+		str=str..": {"
+		for i,v in ipairs(obj.array) do
+			if dump.objects[v] then
+				if count>100 then
+					str="STACK OVERFLOW ERROR"
+				else
+					count+=1
+					if i==#obj.array then
+						str=str..objtostring(count,dump.objects[v])
+					else
+						str=str..objtostring(count,dump.objects[v])..", "
+					end
+				end
+			end
+		end
+		str=str.."}"
+	end
+	if obj.pairs then
+		str=str..": {"
+		for i,v in ipairs(obj.pairs) do
+			if dump.objects[v] then
+				if count>100 then
+					str="STACK OVERFLOW ERROR"
+				else
+					count+=1
+					if i==#obj.pairs then
+						str=str..objtostring(count,dump.objects[v])
+					else
+						str=str..objtostring(count,dump.objects[v])..", "
+					end
+				end
+			end
+		end
+		str=str.."}"
+	end
+	if obj.object then
+		if dump.objects[obj.object] then
+			str=str..", object: "..objtostring(dump.objects[obj.object])
+		end
+	end
+	return str
+end
+local location
+if not workspace:FindFirstChild("dump_1") then
+	Instance.new("Folder",workspace).Name="dump_1"
+	location=workspace["dump_1"]
+else
+	local count=0
+	for i,v in pairs(workspace:GetChildren()) do
+		if v.Name:sub(1,4)=="dump" then
+			count+=1
+		end
+	end
+	Instance.new("Folder",workspace).Name="dump_"..count+1
+	location=workspace["dump_"..count+1]
+end
+for i,v in pairs(dump.objects) do
+	if v.source and v.source:sub(1,7)~="CoreGui" and v.source:sub(1,12)~="CorePackages" then
+		local check=false
+		local idx
+		for l,x in pairs(paths) do
+			if table.find(x,v.source) then
+				check=true
+				idx=l
+				break
+			end
+		end
+		if not check then
+			table.insert(paths,{v.source,{{i,v.line}},i})
+		else
+			local check2=false
+			for l,x in pairs(paths[idx][2]) do
+				if table.find(x,v.line) then
+					check2=true
+					break
+				end
+			end
+			if check2 then continue end
+			table.insert(paths[idx][2],{i,v.line})
+			table.sort(paths[idx][2],function(a,b)
+				return a[2]<b[2]
+			end)
+		end
+	end
+end
+for i,v in pairs(paths) do
+	for l,x in ipairs(v[2]) do
+		local scr=dump.objects[x[1]]
+		if l==1 then
+			finalstring=finalstring.."game."..string.sub(scr.source,2,-1)..": \n"
+		else
+			finalstring=finalstring.."  LINE "..x[2]..":\n"
+			if scr.constants then
+				for j,k in ipairs(scr.constants) do
+					local str=objtostring(0,dump.objects[k])
+					finalstring=finalstring.."    CONSTANT "..str..",\n"
+					if dump.objects[k].type=="function" and dump.objects[k].upvalues then
+						for g,h in ipairs(dump.objects[k].upvalues) do
+							local str=objtostring(0,dump.objects[h])
+							finalstring=finalstring.."      UPVALUE "..str..",\n"
+						end
+					end
+				end
+			end	
+			if scr.protos then
+				for j,k in ipairs(scr.protos) do
+					local str=objtostring(0,dump.objects[k])
+					finalstring=finalstring.."    PROTO "..str..",\n"
+					if dump.objects[k].constants then
+						for g,h in ipairs(dump.objects[k].constants) do
+							local str=objtostring(0,dump.objects[h])
+							finalstring=finalstring.."      CONSTANT "..str..",\n"
+						end
+					end
+				end
+			end
+			if l~=#v[2] then continue end
+			finalstring=finalstring.."\n"
+		end
+	end
+	local module=Instance.new("ModuleScript",location)
+	module.Name="game."..string.sub(dump.objects[v[2][1][1]].source,2,-1)
+	finalstring=finalstring.."]]"
+	module.Source=finalstring
+	finalstring="--[[\n"
+end
