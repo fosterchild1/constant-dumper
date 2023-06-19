@@ -2,7 +2,10 @@ local dump=game:GetService("HttpService"):JSONDecode(require(game.ServerScriptSe
 local finalstring="--[[\n"
 local paths={}
 local function objtostring(count,obj)
-	local str=obj.type
+	local str=""
+	if obj.type then
+		str=obj.type
+	end
 	if obj.name then
 		str=str..": "..obj.name
 	end
@@ -67,7 +70,7 @@ else
 	location=workspace["dump_"..count+1]
 end
 for i,v in pairs(dump.objects) do
-	if v.source and v.source:sub(1,8)~="=CoreGui" and v.source:sub(1,13)~="=CorePackages" then
+	if v.source and not v.source:match("ChatScript") and not v.source:match("PlayerModule") and v.source:sub(1,8)~="=CoreGui" and v.source:sub(1,13)~="=CorePackages" and v.source:sub(1,5)~="=Chat" then
 		local check=false
 		local idx
 		for l,x in pairs(paths) do
@@ -105,11 +108,19 @@ for i,v in pairs(paths) do
 			if scr.constants then
 				for j,k in ipairs(scr.constants) do
 					local str=objtostring(0,dump.objects[k])
-					finalstring=finalstring.."    CONSTANT "..str..",\n"
+					if j==#scr.constants then
+						finalstring=finalstring.."    CONSTANT "..str.."\n"
+					else
+						finalstring=finalstring.."    CONSTANT "..str..",\n"
+					end
 					if dump.objects[k].type=="function" and dump.objects[k].upvalues then
 						for g,h in ipairs(dump.objects[k].upvalues) do
 							local str=objtostring(0,dump.objects[h])
-							finalstring=finalstring.."      UPVALUE "..str..",\n"
+							if g==#dump.objects[k].upvalues then
+								finalstring=finalstring.."      UPVALUE "..str.."\n"
+							else
+								finalstring=finalstring.."      UPVALUE "..str..",\n"
+							end
 						end
 					end
 				end
@@ -117,11 +128,19 @@ for i,v in pairs(paths) do
 			if scr.protos then
 				for j,k in ipairs(scr.protos) do
 					local str=objtostring(0,dump.objects[k])
-					finalstring=finalstring.."    PROTO "..str..",\n"
+					if j==#scr.protos then
+						finalstring=finalstring.."    PROTO "..str.."\n"
+					else
+						finalstring=finalstring.."    PROTO "..str..",\n"
+					end
 					if dump.objects[k].constants then
 						for g,h in ipairs(dump.objects[k].constants) do
 							local str=objtostring(0,dump.objects[h])
-							finalstring=finalstring.."      CONSTANT "..str..",\n"
+							if g==#dump.objects[k].constants then
+								finalstring=finalstring.."      CONSTANT "..str.."\n"
+							else
+								finalstring=finalstring.."      CONSTANT "..str..",\n"
+							end
 						end
 					end
 				end
@@ -139,12 +158,11 @@ for i,v in pairs(paths) do
 		local p,c=1,1
 		repeat
 			local module=Instance.new("ModuleScript",location)
-			module.Name="game."..string.sub(dump.objects[v[2][1][1]].source,2,-1).." c"
-			finalstring=finalstring:sub(p,p+199994).."--]]"
-			module.Source=finalstring:sub(p,p+199998)
+			module.Name="game."..string.sub(dump.objects[v[2][1][1]].source,2,-1).." "..c
+			module.Source=c==1 and ""..finalstring:sub(p,p+199992).."]]" or "--[["..finalstring:sub(p,p+199992).."]]"
 			p+=199999
 			c+=1
-		until p>=#finalstring
+		until p>finalstring:len()
 	end
 	finalstring="--[[\n"
 end
