@@ -130,17 +130,18 @@ for i,v in pairs(paths) do
 			finalstring=finalstring.."\n"
 		end
 	end
-	local module=Instance.new("ModuleScript",location)
-	module.Name="game."..string.sub(dump.objects[v[2][1][1]].source,2,-1)
-	finalstring=finalstring.."]]"
 	if finalstring:len()<200000 then
+		local module=Instance.new("ModuleScript",location)
+		module.Name="game."..string.sub(dump.objects[v[2][1][1]].source,2,-1)
+		finalstring=finalstring.."]]"
 		module.Source=finalstring
 	else
 		local p,c=1,1
 		repeat
-			local module2=Instance.new("ModuleScript",location)
-			module2.Name=module.Name..c
-			module2.Source=finalstring:sub(p,p+199998)
+			local module=Instance.new("ModuleScript",location)
+			module.Name="game."..string.sub(dump.objects[v[2][1][1]].source,2,-1).." c"
+			finalstring=finalstring:sub(p,p+199994).."--]]"
+			module.Source=finalstring:sub(p,p+199998)
 			p+=199999
 			c+=1
 		until p>=#finalstring
