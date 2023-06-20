@@ -70,7 +70,7 @@ else
 	location=workspace["dump_"..count+1]
 end
 for i,v in pairs(dump.objects) do
-	if v.source and not v.source:match("ChatScript") and not v.source:match("PlayerModule") and v.source:sub(1,8)~="=CoreGui" and v.source:sub(1,13)~="=CorePackages" and v.source:sub(1,5)~="=Chat" then
+	if v.source and v.line and not v.source:match("ChatScript") and not v.source:match("PlayerModule") and v.source:sub(1,8)~="=CoreGui" and v.source:sub(1,13)~="=CorePackages" and v.source:sub(1,5)~="=Chat" then
 		local check=false
 		local idx
 		for l,x in pairs(paths) do
@@ -99,10 +99,11 @@ for i,v in pairs(dump.objects) do
 	end
 end
 for i,v in pairs(paths) do
+	print(i,v)
 	for l,x in ipairs(v[2]) do
 		local scr=dump.objects[x[1]]
 		if l==1 then
-			finalstring=finalstring.."game."..string.sub(scr.source,2,-1)..": \n"
+			finalstring=finalstring.."game."..string.sub(scr.source,2,-1)..":\n"
 		else
 			finalstring=finalstring.."  LINE "..x[2]..":\n"
 			if scr.constants then
@@ -125,6 +126,26 @@ for i,v in pairs(paths) do
 					end
 				end
 			end	
+			if scr.stack then
+				for j,k in ipairs(scr.stack) do
+					local str=objtostring(0,dump.objects[k])
+					if j==#scr.stack then
+						finalstring=finalstring.."    CONSTANT "..str.."\n"
+					else
+						finalstring=finalstring.."    CONSTANT "..str..",\n"
+					end
+					if dump.objects[k].type=="function" and dump.objects[k].upvalues then
+						for g,h in ipairs(dump.objects[k].upvalues) do
+							local str=objtostring(0,dump.objects[h])
+							if g==#dump.objects[k].upvalues then
+								finalstring=finalstring.."      UPVALUE "..str.."\n"
+							else
+								finalstring=finalstring.."      UPVALUE "..str..",\n"
+							end
+						end
+					end
+				end
+			end
 			if scr.protos then
 				for j,k in ipairs(scr.protos) do
 					local str=objtostring(0,dump.objects[k])
